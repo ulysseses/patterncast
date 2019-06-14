@@ -89,9 +89,9 @@ function processSignals() {
           // EXIT           K 3
           arr[3] = parseFloat(exit).toFixed(2);
           // STOP           L 4
-          arr[4] = parseFloat((signal === 'SELL' ? 1 : -1) * (4.0 / Math.abs(delta)) + entry).toFixed(2);
+          arr[4] = parseFloat((signal === 'SELL' ? 1 : -1) * (Math.abs(exit - entry) / Math.abs(delta)) + entry).toFixed(2);
           // Small STOP     M 5
-          arr[5] = parseFloat((signal === 'SELL' ? 1 : -1) * 4.0 + entry).toFixed(2);
+          arr[5] = parseFloat((signal === 'SELL' ? 1 : -1) * Math.abs(exit - entry) + entry).toFixed(2);
           // Profit*        N 6
           arr[6] = parseFloat(Math.abs(exit - entry) * 100 * delta).toFixed(2);
           // Small Profit** O 7
@@ -123,7 +123,7 @@ function processSignals() {
           // EXIT           K 3
           arr[3] = exit;
           // STOP           L 4
-          arr[4] = (signal === 'SELL' ? 1 : -1) / 10000.0 * 400 + entry;
+          arr[4] = (signal === 'SELL' ? 1 : -1) * Math.abs(exit - entry) + entry;
           // Small STOP     M 5
           // Profit*        N 6
           arr[6] = parseFloat(Math.abs(exit - entry) * 10000.0 / conversionRate).toFixed(2);
@@ -148,7 +148,7 @@ function processSignals() {
           // STOP           L 4
           arr[4] = optionallyTickify_(
             arr[0],
-            truncateTick_((signal === 'SELL' ? 1 : -1) / contractSize * 400 + entry, tick));
+            truncateTick_((signal === 'SELL' ? 1 : -1) * Math.abs(exit - entry) + entry, tick));
           // Profit*        N 6
           arr[6] = parseFloat(Math.abs(exit - entry) * contractSize).toFixed(2);
           // Margin         P 8
@@ -162,7 +162,7 @@ function processSignals() {
             // Small STOP     M 5
             arr[5] = optionallyTickify_(
               arr[1],
-              truncateTick_((signal === 'SELL' ? 1 : -1) / smallContractSize * 400 + entry, tick));
+              truncateTick_((signal === 'SELL' ? 1 : -1) / smallContractSize * Math.abs(exit - entry) + entry, tick));
             // Small Profit** O 7
             arr[7] = parseFloat(Math.abs(exit - entry) * smallContractSize).toFixed(2);
             // Small Margin   Q 9
