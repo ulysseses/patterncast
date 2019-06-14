@@ -3,6 +3,10 @@
  * @file Signals Controller
  */
 
+/**
+ * Process the PatternCast emailed signals and show the processed results
+ * on the Signals sheet.
+ */
 function processSignals() {
   var tdService = getTDService();
   if (!tdService.hasAccess()) {
@@ -11,11 +15,11 @@ function processSignals() {
   }
   tdService.refresh();
 
-  var repo = SignalsRepository(TDClient(tdService), CMEGroup());
+  var repo = new SignalsRepository(new TDClient(tdService), new CMEGroup());
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Signals');
 
   // Obtain quote information for emailed signal quotes
-  repo.fetchQuotes(sheet.getRange('A2:A').getValues());
+  repo.fetchQuotes(sheet.getRange('C2:C').getValues());
 
   // Set up headers of newly added columns
   sheet.getRange('H1:S1')
@@ -41,20 +45,20 @@ function processSignals() {
     sheet.getRange('V3')
       .setValue('** Assuming 1 share for equity, or mini lot for forex (10,000)');
 
-    let addedColumns = [];
-    let emailData = sheet.getRange('A2:G').getValues();
-    for (let i = 0; i < emailData.length; i++) {
+    var addedColumns = [];
+    var emailData = sheet.getRange('A2:G').getValues();
+    for (var i = 0; i < emailData.length; i++) {
       if (emailData[i][0] === '') {
         break;
       }
 
-      let sessionStart = values[i][0]; // A
-      let type = values[i][1];         // B
-      let symbol = values[i][2];       // C
-      let description = values[i][3];  // D
-      let signal = values[i][4];       // E
-      let entry = values[i][5];        // F
-      let exit = values[i][6];         // G
+      var sessionStart = emailData[i][0]; // A
+      var type = emailData[i][1];         // B
+      var symbol = emailData[i][2];       // C
+      var description = emailData[i][3];  // D
+      var signal = emailData[i][4];       // E
+      var entry = emailData[i][5];        // F
+      var exit = emailData[i][6];         // G
 
       // edge case
       if (symbol === 'JY') {
@@ -64,21 +68,22 @@ function processSignals() {
 
       //         0   1   2   3   4   5   6   7   8   9   10  11
       //         H   I   J   K   L   M   N   O   P   Q   R   S
-      let arr = ['', '', '', '', '', '', '', '', '', '', '', ''];
+      var arr = ['', '', '', '', '', '', '', '', '', '', '', ''];
       
       // ToS            H 0
-      let tosSymbol = repo.mapEmailToToSSymbol(symbol);
-      if (tosSymbol === null) {
-        continue;
+      var tosSymbol = repo.mapEmailToToSSymbol(symbol);
+      if (tosSymbol != null) {
+        arr[0] = tosSymbol;
       }
-      arr[0] = tosSymbol;
 
       // Small          I 1
-      arr[1] = repo.mapEmailToToSSmallSymbol(symbol);
-
+      var smallToSSymbol = repo.mapEmailToToSSmallSymbol(symbol);
+      if (smallToSSymbol != null) {
+        arr[1] = repo.mapEmailToToSSmallSymbol(symbol);
+      }
       switch(type) {
         case 'Equity':
-          let [mark, delta] = repo.getOptions(arr[0], signal);
+          var [mark, delta] = repo.getOptions(arr[0], signal);
           // ENTRY          J 2
           arr[2] = parseFloat(entry).toFixed(2);
           // EXIT           K 3
@@ -101,16 +106,16 @@ function processSignals() {
           arr[11] = Number(arr[7]) / Number(arr[9]);
           break;
         case 'Forex':
-          let isMajor = (arr[0] == 'EUR/USD' ||
+          var isMajor = (arr[0] == 'EUR/USD' ||
                          arr[0] == 'USD/JPY' ||
                          arr[0] == 'GBP/USD' ||
                          arr[0] == 'USD/CAD' ||
                          arr[0] == 'USD/CHF' ||
                          arr[0] == 'AUD/USD' ||
                          arr[0] == 'NZD/USD');
-          let conversionRate = 1;
+          var conversionRate = 1;
           if (symbol.substr(3) != 'USD') {
-            let quote = repo.getQuote('USD/' + symbol.substr(3));
+            var quote = repo.getQuote('USD/' + symbol.substr(3));
             conversionRate = quote.lastPriceInDouble;
           }
           // ENTRY          J 2
@@ -133,9 +138,9 @@ function processSignals() {
           // Small RoC      S 11
           break;
         case 'Futures':
-          let quote = repo.getQuote(arr[0]);
-          let tick = quote.tickAmount / quote.futureMultiplier;
-          let contractSize = quote.futureMultiplier;
+          var quote = repo.getQuote(arr[0]);
+          var tick = quote.tickAmount / quote.futureMultiplier;
+          var contractSize = quote.futureMultiplier;
           // ENTRY          J 2
           arr[2] = optionallyTickify_(arr[0], truncateTick_(entry, tick));
           // EXIT           K 3
@@ -150,10 +155,10 @@ function processSignals() {
           arr[8] = repo.getMargin(arr[0]);
           // RoC            R 10
           arr[10] = Number(arr[6]) / Number(arr[8]);
-          if (arr[1] != null) {
-            let smallQuote = repo.getQuote(arr[1]);
-            let smallTick = smallQuote.tickAmound / smallQuote.futureMultiplier;
-            let smallContractSize = smallQuote.futureMultiplier;
+          if (arr[1] != '') {
+            var smallQuote = repo.getQuote(arr[1]);
+            var smallTick = smallQuote.tickAmount / smallQuote.futureMultiplier;
+            var smallContractSize = smallQuote.futureMultiplier;
             // Small STOP     M 5
             arr[5] = optionallyTickify_(
               arr[1],
@@ -169,13 +174,48 @@ function processSignals() {
         default:
           break;
       }
+
+      addedColumns.push(arr);
     }
+
+    sheet.getRange('H2:S' + (2 + addedColumns.length - 1))
+      .setValues(addedColumns);
+
+  // Final touches
+  sheet.setFrozenRows(1);
+  sheet.setFrozenColumns(7);
+  sheet.getRange('H2:I' + (2 + addedColumns.length - 1))
+    .setFontFamily('Source Code Pro');
+  sheet.getRange('N2:N').setNumberFormat('0.00');
+  sheet.getRange('O2:O').setNumberFormat('0.00');
+  sheet.getRange('P2:P').setNumberFormat('0.00');
+  sheet.getRange('Q2:Q').setNumberFormat('0.00');
+  sheet.getRange('R2:R').setNumberFormat('0.00%');
+  sheet.getRange('S2:S').setNumberFormat('0.00%');
+  sheet.getDataRange().setHorizontalAlignment('left');
+  sheet.autoResizeColumns(1, 19);
+  if (sheet.getRange('A:U').getFilter() != null) {
+    sheet.getRange('A:U').getFilter().remove();
+  }
+  sheet.getRange('A:U').createFilter();
 }
 
+/**
+ * Truncate the price to be whole number increments of tick.
+ * @param {Number} price price.
+ * @param {Number} tick tick amount.
+ * @return {Number} Price truncated to be a whole number increment of tick.
+ */
 function truncateTick_(price, tick) {
   return Math.round(parseFloat(price) / tick) * tick;
 }
 
+/**
+ * Convert XX.XXX to XX'XXX number format for certain symbols.
+ * @param {string} tosSymbol ToS symbol.
+ * @param {Number} price price.
+ * @return {string} Price in XX'XXX format.
+ */
 function optionallyTickify_(tosSymbol, price) {
   if (tosSymbol === '/ZF' || tosSymbol === '/ZN') {
     return Math.trunc(price) + "'" + Math.trunc((price - Math.trunc(price)) * 320);

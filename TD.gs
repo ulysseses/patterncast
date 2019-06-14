@@ -13,7 +13,7 @@ var TDClient = function(tdService) {
   validate_({
     'tdService': tdService
   });
-  this.tdService_ = tdService;
+  this.service_ = tdService;
   this.apiKey_ = tdService.clientId_.split('@')[0];
 };
 
@@ -25,8 +25,8 @@ var TDClient = function(tdService) {
  * @return {object} Get Quotes response.
  */
 TDClient.prototype.getQuotes = function(symbols) {
-  const urlBase = 'https://api.tdameritrade.com/v1/marketdata/quotes';
-  let params = {
+  var urlBase = 'https://api.tdameritrade.com/v1/marketdata/quotes';
+  var params = {
     symbol: symbols.join(',')
   };
   return this.callAPI_(urlBase, params, 'GET');
@@ -39,7 +39,7 @@ TDClient.prototype.getQuotes = function(symbols) {
  * @return {object} Get Option Chain response.
  */
 TDClient.prototype.getOptionChain = function(query) {
-  const urlBase = 'https://api.tdameritrade.com/v1/marketdata/chains';
+  var urlBase = 'https://api.tdameritrade.com/v1/marketdata/chains';
   return this.callAPI_(urlBase, query, 'GET');
 }
 
@@ -52,20 +52,20 @@ TDClient.prototype.getOptionChain = function(query) {
  * @return {object} JSON response.
  */
 TDClient.prototype.callAPI_ = function(urlBase, params, method) {
-  let options = {
+  var options = {
     'headers': {
-      'Authorization': 'Bearer ' + this.getAccessToken(),
+      'Authorization': 'Bearer ' + this.service_.getAccessToken(),
       'Accept': 'application/json'
     },
     'method': method
-  }
+  };
 
-  let queryString = Object.keys(params)
-    .map(k => encodeURIComponent(k) '=' + encodeURIComponent(params[k]))
+  var queryString = Object.keys(params)
+    .map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k])})
     .join('&');
-  let url = urlBase + '?' + this.apiKey_ + '&' + queryString;
+  var url = urlBase + '?' + this.apiKey_ + '&' + queryString;
 
-  let response = UrlFetchApp.fetch(url, options);
+  var response = UrlFetchApp.fetch(url, options);
   if (response.getResponseCode() != 200) {
     throw(response.getContentText());
   }
