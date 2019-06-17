@@ -218,7 +218,7 @@ function truncateTick_(price, tick) {
  */
 function optionallyTickify_(tosSymbol, price) {
   if (tosSymbol === '/ZF' || tosSymbol === '/ZN') {
-    return Math.trunc(price) + "'" + Math.trunc((price - Math.trunc(price)) * 320);
+    return parseInt(price) + "'" + parseInt((price - parseInt(price)) * 320);
   }
   return price;
 }

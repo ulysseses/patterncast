@@ -1,5 +1,3 @@
-/* CMEGroup.gs */
-
 /**
  * Creates a new CMEGroup sub-repository. This is used internally by SignalsRepository.
  * @constructor

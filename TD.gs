@@ -1,4 +1,3 @@
-/* TD.gs */
 /**
  * @file functions for easy access to TD Ameritrade API
  */

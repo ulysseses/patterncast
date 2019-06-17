@@ -1,4 +1,3 @@
-/* Code.gs */
 /**
  * @file Code.gs defines onOpen, which adds menu items.
  */

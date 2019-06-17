@@ -1,4 +1,3 @@
-/* OAuth.gs */
 /**
  * @file functions for OAuth 2.0 authentication/authorization with TD Ameritrade API
  */

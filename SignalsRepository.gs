@@ -18,13 +18,13 @@ var SignalsRepository = function(tdClient, cmeGroup) {
 
 /**
  * Fetch and store quotes for the symbols listed in the email.
- * @param {Array.<string>} emailSybmols Array of email symbols.
+ * @param {Array.<string>} emailSymbols Array of email symbols.
  */
 SignalsRepository.prototype.fetchQuotes = function(emailSymbols) {
   var symbolSet = {};
   var symbols = [];
   for (var i = 0; i < emailSymbols.length; i++) {
-    var emailSymbol = emailSymbols[i];
+    var emailSymbol = emailSymbols[i][0];
     if (emailSymbol === '') {
       break;
     }
@@ -46,13 +46,16 @@ SignalsRepository.prototype.fetchQuotes = function(emailSymbols) {
       symbolSet[symbol] = true;
       symbols.push(symbol);
     }
-
-    if (emailSymbol.length == 6 && emailSybmol.substr(3) != 'USD') {
-      var symbol = 'USD/' + symbol.substr(3);
+    
+    if (emailSymbol.length == 6 && emailSymbol.substr(3) != 'USD') {
+      var symbol = 'USD/' + emailSymbol.substr(3);
+      if (symbol in symbolSet) {
+        continue;
+      }
+      symbolSet[symbol] = true;
       symbols.push(symbol);
     }
   }
-
   this.quotes_ = this.tdClient_.getQuotes(symbols);
 }
 
